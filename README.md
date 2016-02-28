@@ -13,7 +13,8 @@ else {
 	RainwavePlayer.addEventListener("error", function() { alert("The RainwavePlayer stopped working!") });
 	RainwavePlayer.play();
 	stopButton.addEventListener("click", RainwavePlayer.stop);
-}```
+}
+```
 
 ## Functions:
 
