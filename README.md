@@ -24,7 +24,7 @@ if (!RainwavePlayer.isSupported) {
 	alert("No HTML5 audio support!");
 }
 else {
-	// optional display of &lt;audio&gt; element to user
+	// optional display of audio element to user
 	Rainwave.audioElDest = document.getElementById("audioContainer");
 
 	RainwavePlayer.useStation("Game");
