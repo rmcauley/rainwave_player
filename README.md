@@ -16,7 +16,6 @@ No external requirements or shims required.
 	<div id="stop">Stop</div>
 	<div id="audioContainer" style="margin-top: 1em;"></div>
 </body>
-
 ```
 
 ```javascript
