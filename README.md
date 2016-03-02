@@ -7,7 +7,16 @@ A library to mask the audio element and the difficulties of streaming in HTML5.
 No external requirements or shims required.
 
 ```html
-<script src="/static/RainwavePlayer.min.js"></script>
+<head>
+	<script src="/static/RainwavePlayer.min.js"></script>
+</head>
+
+<body>
+	<div id="play">Play</div>
+	<div id="stop">Stop</div>
+	<div id="audioContainer" style="margin-top: 1em;"></div>
+</body>
+
 ```
 
 ```javascript
@@ -15,10 +24,14 @@ if (!RainwavePlayer.isSupported) {
 	alert("No HTML5 audio support!");
 }
 else {
+	// optional display of &lt;audio&gt; element to user
+	Rainwave.audioElDest = document.getElementById("audioContainer");
+
 	RainwavePlayer.useStation("Game");
 	RainwavePlayer.addEventListener("error", function() { alert("The RainwavePlayer stopped working!") });
 	RainwavePlayer.play();
-	stopButton.addEventListener("click", RainwavePlayer.stop);
+	document.getElementById("play").addEventListener("click", RainwavePlayer.play);
+	document.getElementById("stop").addEventListener("click", RainwavePlayer.stop);
 }
 ```
 
