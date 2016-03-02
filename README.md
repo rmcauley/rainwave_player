@@ -4,6 +4,12 @@ A library to mask the audio element and the difficulties of streaming in HTML5.
 
 ## Synopsis:
 
+No external requirements or shims required.
+
+```html
+<script src="/static/RainwavePlayer.min.js"></script>
+```
+
 ```javascript
 if (!RainwavePlayer.isSupported) {
 	alert("No HTML5 audio support!");
@@ -18,13 +24,15 @@ else {
 
 ## Functions:
 
-* `useStation(station)  :` Accepts station IDs or station names to setup audio sources. (e.g. "All")
-* `useStreamURLs(array) :` An array of source URL strings.
-* `playToggle()         :` Stops/starts playback.
-* `play()               :` Starts playback.
-* `stop()               :` Stops playback.
-* `toggleMute()         :` Toggles mute.
-* `setVolume(newVolume) :` Sets volume.  Must be between 0.0 and 1.0.
+| Function               | Description   |
+| ---------------------- | ------------- |
+| `useStation(station) ` | Accepts station IDs or station names to setup audio sources. (names: All, Game, Chiptune, Covers, OCR) |
+| `useStreamURLs(array)` | An array of source URL strings. |
+| `playToggle()        ` | Stops/starts playback. |
+| `play()              ` | Starts playback. |
+| `stop()              ` | Stops playback. |
+| `toggleMute()        ` | Toggles mute. |
+| `setVolume(newVolume)` | Sets volume.  newVolume must be between `0.0` and `1.0`. |
 
 ## Events:
 
@@ -45,20 +53,34 @@ Note about "stall": the browser can throw its own stall events many times, repea
 it will revert to "playing" or "stop".  Please make sure you have your own code setup
 to handle repeated errors!
 
-## Setters:
+## Properties:
 
-* `audioElDest   :` Optional for compaibility - what DOM element to place the audio tag in.
-                Set this to be somewhere on your page, even if visiblity: hidden or
-                outside the browser's viewport, to avoid trouble with some browsers.
-                If you forget to define it, the library will generate a div to use but
-                will not append it anywhere on the page.
+| Property       | Type     | Description   |
+| -------------- | -------- | ------------- |
+| `isSupported ` | Boolean  | Can the browser play back HTML5 audio? |
+| `isPlaying   ` | Boolean  | Is the library playing/trying to play (`true`) or stopped? (`false`) |
+| `isMuted     ` | Boolean  | `true` when muted. |
+| `type        ` | String   | What kind of audio does the browser support: "Vorbis" or "MP3"? |
+| `mimetype    ` | String   | MIME type of the supported audio format, e.g. `audio/ogg` |
+| `volume      ` | Number   | `0.0` to `1.0`. `0.0` during mute. |
+| `audioElDest ` | DOM Node | Optional for compatability.  Provide a DOM node (getElementById/etc)
+                              for RainwavePlayer to place an audio DOM node in.
+                              Set this to be somewhere on your page, even if visiblity: hidden or
+                              outside the browser's viewport, to avoid trouble with some browsers.
+                              If you forget to define it, the library will generate a div to use but
+                              will not append it anywhere on the page, which works in almost cases. |
 
-## Getters/Properties:
+All properties can be changed, though doing so may break the player.
 
-* `isSupported   :` Boolean: Can the browser play back HTML5 audio?
-* `isPlaying     :` Boolean: Is the library playing/trying to play (true) or stopped? (false)
-* `isMuted       :` Boolean.
-* `type          :` String : What kind of audio does the browser support: "Vorbis" or "MP3"?
-* `volume        :` Number : 0.0 to 1.0. 0.0 during mute.
+### Forcing Compatibility
 
-All properties can be changed, but please don't.  You'll break your own player. :)
+If you are dead certain your situation can playback audio and `isSupported` is false, you can
+force a playback attempt:
+
+```javascript
+RainwavePlayer.isSupported = true;
+RainwavePlayer.type = "mp3";
+RainwavePlayer.type = "audio/mpeg";
+RainwavePlayer.useStation("All");
+RainwavePlayer.play();
+```
