@@ -45,8 +45,8 @@ var RainwavePlayer = function() {
 	self.isPlaying = false;
 	self.volume = 1.0;
 	self.isMuted = false;
+	self.mimetype = "";
 
-	var filetype;
 	var streamURLs = [];
 	var volumeBeforeMute = 1.0;
 	var isMobile = (navigator.userAgent.toLowerCase().indexOf("mobile") !== -1) || (navigator.userAgent.toLowerCase().indexOf("android") !== -1);
@@ -75,26 +75,23 @@ var RainwavePlayer = function() {
 		if (isMobile) {
 			// avoid using Vorbis on mobile devices, since MP3 playback has hardware decoding
 		}
-		else if (navigator.userAgent.indexOf("CrKey") !== -1) {
-			// avoid Vorbis on obscure forms of Chromium and Chromium based browsers
-		}
 		else {
 			canVorbis = audioEl.canPlayType("audio/ogg; codecs=\"vorbis\"");
 		}
 
 		// we have to check for Mozilla support specifically for Vorbis.
-		// Webkit will choke on Vorbis and stop playing after
+		// Webkit/Blink, esp. older ones, will choke on Vorbis and stop playing after
 		// a single song switch, and thus, we have to forcefeed it MP3.
 		// Check for Mozilla by looking for really specific moz-prefixed properties.
 		if ((navigator.mozIsLocallyAvailable || navigator.mozApps || navigator.mozContacts) && ((canVorbis == "maybe") || (canVorbis == "probably"))) {
-			filetype = "audio/ogg";
+			self.mimetype = "audio/ogg";
 			self.type = "ogg";
 			self.isSupported = true;
 		}
 
 		var canMP3 = audioEl.canPlayType("audio/mpeg; codecs=\"mp3\"");
 		if (!self.isSupported && (canMP3 == "maybe") || (canMP3 == "probably")) {
-			filetype = "audio/mpeg";
+			self.mimetype = "audio/mpeg";
 			self.type = "mp3";
 			self.isSupported = true;
 		}
@@ -133,7 +130,7 @@ var RainwavePlayer = function() {
 	var setupAudioSource = function(i, stream_url) {
 		var source = document.createElement("source");
 		source.setAttribute("src", stream_url);
-		source.setAttribute("type", filetype);
+		source.setAttribute("type", self.mimetype);
 
 		// source.addEventListener("playing", self.on_play);			// doesn't work
 
@@ -292,45 +289,65 @@ var RainwavePlayer = function() {
 	//	Event Handlers
 	// *******************************************************************************************
 
-	var onWaiting = function() {
-		self.dispatchEvent(createEvent("loading"));
-	};
-
-	var onPlay = function() {
-		self.dispatchEvent(createEvent("playing"));
-		self.dispatchEvent(createEvent("change"));
-	};
-
-	var onStop = function() {
-		self.dispatchEvent(createEvent("stop"));
-		self.dispatchEvent(createEvent("change"));
-	};
-
 	// the stall-related functions have a timeout in order
 	// to workaround browser issues that report stalls for VERY brief
 	// moments (often 50-70ms).
 	// don't let these escape the library unless there's an actual problem.
 
 	var stall_timeout;
+	var stall_active;
 	var stopAudioConnectError = function() {
 		if (stall_timeout) {
 			clearTimeout(stall_timeout);
 			stall_timeout = null;
 		}
+		stall_active = false;
 	};
 	var doAudioConnectError = function(detail) {
-		if (stall_timeout) {
+		if (stall_active) {
+			dispatchStall(detail);
+		}
+		else if (stall_timeout) {
 			return;
 		}
-		stall_timeout = setTimeout(function() {
-			var evt = createEvent("stall");
-			evt.detail = detail;
-			self.dispatchEvent(evt);
-			stall_timeout = null;
-		}, 1000);
+		else {
+			stall_timeout = setTimeout(function() {
+				dispatchStall(detail);
+			}, 1000);
+		}
+	};
+
+	var dispatchStall = function(detail) {
+		// console.log("Sending stall: " + (detail || "<audio>"));
+		var evt = createEvent("stall");
+		evt.detail = detail;
+		self.dispatchEvent(evt);
+		stall_timeout = null;
+		stall_active = true;
+	};
+
+	var onPlay = function() {
+		// console.log("Sending play.");
+		stopAudioConnectError();
+		self.dispatchEvent(createEvent("playing"));
+		self.dispatchEvent(createEvent("change"));
+	};
+
+	var onWaiting = function() {
+		// console.log("Sending loading.");
+		stopAudioConnectError();
+		self.dispatchEvent(createEvent("loading"));
+	};
+
+	var onStop = function() {
+		// console.log("Sending stop.");
+		stopAudioConnectError();
+		self.dispatchEvent(createEvent("stop"));
+		self.dispatchEvent(createEvent("change"));
 	};
 
 	var onStall = function(e, i) {
+		// console.log("Stall detected.");
 		// we need to handle stalls from sources (which have an index)
 		// and stalls from the audio element themselves in this function
 		// we handle sources so that we know how bad things are.
@@ -351,6 +368,7 @@ var RainwavePlayer = function() {
 	};
 
 	var onError = function(e) {
+		// console.log("Sending error.");
 		stopAudioConnectError();
 		self.stop();
 		self.dispatchEvent(createEvent("error"));
@@ -371,7 +389,7 @@ var RainwavePlayer = function() {
 
 	self.addEventListener = function(evtname, callback) {
 		if (!callbacks[evtname]) {
-			console.error(evtname + " is not a isSupported event for the Rainwave Player.");
+			console.error(evtname + " is not a supported event for the Rainwave Player.");
 			return;
 		}
 		callbacks[evtname].push(callback);
