@@ -48,7 +48,6 @@ var RainwavePlayer = function() {
 	self.mimetype = "";
 
 	var streamURLs = [];
-	var volumeBeforeMute = 1.0;
 	var isMobile = (navigator.userAgent.toLowerCase().indexOf("mobile") !== -1) || (navigator.userAgent.toLowerCase().indexOf("android") !== -1);
 
 	// Chrome on mobile has a really nasty habit of stalling AFTER playback has started
@@ -71,6 +70,13 @@ var RainwavePlayer = function() {
 
 	var audioEl = document.createElement("audio");
 	if ("canPlayType" in audioEl) {
+		var canMP3 = audioEl.canPlayType("audio/mpeg; codecs=\"mp3\"");
+		if ((canMP3 == "maybe") || (canMP3 == "probably")) {
+			self.mimetype = "audio/mpeg";
+			self.type = "mp3";
+			self.isSupported = true;
+		}
+
 		var canVorbis = false;
 		if (isMobile) {
 			// avoid using Vorbis on mobile devices, since MP3 playback has hardware decoding
@@ -86,13 +92,6 @@ var RainwavePlayer = function() {
 		if ((navigator.mozIsLocallyAvailable || navigator.mozApps || navigator.mozContacts) && ((canVorbis == "maybe") || (canVorbis == "probably"))) {
 			self.mimetype = "audio/ogg";
 			self.type = "ogg";
-			self.isSupported = true;
-		}
-
-		var canMP3 = audioEl.canPlayType("audio/mpeg; codecs=\"mp3\"");
-		if (!self.isSupported && (canMP3 == "maybe") || (canMP3 == "probably")) {
-			self.mimetype = "audio/mpeg";
-			self.type = "mp3";
 			self.isSupported = true;
 		}
 
@@ -136,7 +135,7 @@ var RainwavePlayer = function() {
 
 		// on the final <source> of the audio stream, we throw an error event
 		// as the browser will stop trying to play audio
-		if (i == streamURLs.length - 1) {
+		if (i === streamURLs.length - 1) {
 			source.addEventListener("error", onError);
 		}
 		// otherwise, have it throw a stall
@@ -210,7 +209,7 @@ var RainwavePlayer = function() {
 
 			audioEl.play();
 			self.isPlaying = true;
-			self.dispatchEvent(createEvent("playing"));
+			self.dispatchEvent(createEvent("loading"));
 			self.dispatchEvent(createEvent("change"));
 		}
 	};
@@ -253,15 +252,12 @@ var RainwavePlayer = function() {
 		if (self.isMuted) {
 			self.isMuted = false;
 			if (audioEl) {
-				audioEl.volume = volumeBeforeMute || self.volume;
+				audioEl.volume = self.volume;
 			}
-			self.volume = volumeBeforeMute;
 			self.dispatchEvent(createEvent("volumeChange"));
 		}
 		else {
 			self.isMuted = true;
-			volumeBeforeMute = self.volume;
-			self.volume = 0;
 			if (audioEl) {
 				audioEl.volume = 0;
 			}
@@ -274,12 +270,8 @@ var RainwavePlayer = function() {
 	 * @param {number} newVolume - 0.0 to 1.0
 	 */
 	self.setVolume = function(newVolume) {
-		if (self.isMuted) {
-			volumeBeforeMute = newVolume;
-			return;
-		}
 		self.volume = newVolume;
-		if (audioEl) {
+		if (audioEl && !self.isMuted) {
 			audioEl.volume = newVolume;
 		}
 		self.dispatchEvent(createEvent("volumeChange"));
